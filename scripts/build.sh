@@ -15,7 +15,7 @@ command -v zip >/dev/null || { echo "✗ Потрібна утиліта zip"; e
 echo "▶ Збірка під linux/${GOARCH_LAMBDA} (Lambda architecture: ${LAMBDA_ARCH})"
 rm -rf build && mkdir -p build
 
-for fn in webhook thumbnail; do
+for fn in webhook thumbnail ideal-weight; do
   mkdir -p "build/${fn}"
   # Кожен прапорець працює на холодний старт (слайд 16):
   #   CGO_ENABLED=0       — статичний бінарник без залежності від libc

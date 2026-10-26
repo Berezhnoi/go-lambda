@@ -282,6 +282,15 @@ AWS. Корисна — відносна різниця cold/warm та впли�
 Подивіться розмір пакетів: `ls -lh build/*.zip` (бінарники — одиниці МБ,
 слайд 13), і спробуйте зібрати без `-ldflags="-s -w"`, щоб побачити різницю.
 
+### Третя функція · `cmd/ideal-weight/`
+
+HTTP `POST /ideal-weight` з `{age, height_cm, sex}` → здоровий діапазон ваги за ІМТ
+(18.5–24.9) та оцінки Devine/Robinson/Miller/Hamwi, кг. Stateless, без БД.
+Запуск: `make test` (тести), `make build` (→ `build/ideal-weight.zip`), `make sam-invoke-iw`
+(`sam local invoke` з фікстурами `events/ideal-weight/`).
+Перевірка: `valid.json` → 200, `invalid-json.json` і `missing-field.json` → 400 з `{"error": …}`.
+Результати та init duration — у `docs/cold-start.md`.
+
 ---
 
 ## 6. Бонус: гаряче перезавантаження (hot-reload) у Floci

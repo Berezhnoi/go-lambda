@@ -1,0 +1,19 @@
+{
+  "resource": "/ideal-weight",
+  "path": "/ideal-weight",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "queryStringParameters": null,
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "requestId": "demo-iw-valid-0001",
+    "stage": "dev",
+    "httpMethod": "POST",
+    "path": "/dev/ideal-weight"
+  },
+  "body": "{\"age\": 30, \"height_cm\": 180, \"sex\": \"male\"}",
+  "isBase64Encoded": false
+}

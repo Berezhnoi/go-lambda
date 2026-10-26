@@ -39,6 +39,20 @@ Resources:
       # S3-тригер у цьому шаблоні не оголошено навмисно: розгортання з тригером
       # демонструється через Terraform (terraform/main.tf) на Floci.
 
+  IdealWeightFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile       # викликає `make build-IdealWeightFunction`
+    Properties:
+      CodeUri: ..
+      # Stateless: без БД, лише логи.
+      Events:
+        IdealWeight:
+          Type: Api
+          Properties:
+            Path: /ideal-weight
+            Method: post
+
 Outputs:
   WebhookApi:
     Description: URL API (у `sam local start-api` — http://127.0.0.1:3000/webhook)

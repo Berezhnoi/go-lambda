@@ -2,7 +2,7 @@
 SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
-.PHONY: help test build up up-ephemeral down deploy-cli deploy-tf plan-tf smoke bench cleanup clean sam-build sam-invoke sam-api
+.PHONY: help test build up up-ephemeral down deploy-cli deploy-tf plan-tf smoke bench cleanup clean sam-build sam-invoke sam-invoke-iw sam-api
 
 help: ## Показати цілі
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -51,11 +51,15 @@ build-WebhookFunction:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -ldflags="-s -w" -o $(ARTIFACTS_DIR)/bootstrap ./cmd/webhook
 build-ThumbnailFunction:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -ldflags="-s -w" -o $(ARTIFACTS_DIR)/bootstrap ./cmd/thumbnail
+build-IdealWeightFunction:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -ldflags="-s -w" -o $(ARTIFACTS_DIR)/bootstrap ./cmd/ideal-weight
 
 sam-build: ## sam build
 	sam build -t sam/template.yaml
 sam-invoke: sam-build ## sam local invoke на events/valid.json та invalid.json
 	sam local invoke WebhookFunction -e events/valid.json
 	sam local invoke WebhookFunction -e events/invalid.json
+sam-invoke-iw: sam-build ## sam local invoke ideal-weight з кожною фікстурою
+	for e in valid invalid-json missing-field; do sam local invoke IdealWeightFunction -e events/ideal-weight/$$e.json; done
 sam-api: sam-build ## sam local start-api → http://127.0.0.1:3000
 	sam local start-api
