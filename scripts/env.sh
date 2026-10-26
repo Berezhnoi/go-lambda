@@ -24,6 +24,7 @@ export TF_VAR_lambda_architecture="$LAMBDA_ARCH"
 # ── Імена ресурсів ─────────────────────────────────────────────────────────
 export WEBHOOK_FN="libratrack-webhook"
 export THUMB_FN="libratrack-thumbnail"
+export IW_FN="libratrack-ideal-weight"
 export COVERS_BUCKET="libratrack-covers"
 export THUMBS_BUCKET="libratrack-thumbnails"
 export ROLE_NAME="libratrack-lambda-role"

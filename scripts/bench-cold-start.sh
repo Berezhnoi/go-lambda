@@ -10,6 +10,7 @@ N=${1:-10}
 FN=${2:-$WEBHOOK_FN}
 EVENT=events/valid.json
 [[ "$FN" == "$THUMB_FN" ]] && EVENT=events/s3_put.json
+[[ "$FN" == "$IW_FN" ]] && EVENT=events/ideal-weight/valid.json
 command -v docker >/dev/null || { echo "✗ Потрібен docker для скидання теплих контейнерів"; exit 1; }
 
 now_ms() {

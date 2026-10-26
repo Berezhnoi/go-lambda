@@ -87,6 +87,21 @@ resource "aws_lambda_function" "thumbnail" {
   }
 }
 
+resource "aws_lambda_function" "ideal_weight" {
+  function_name = "libratrack-ideal-weight"
+  role          = aws_iam_role.lambda_exec.arn
+
+  runtime       = "provided.al2023"
+  architectures = [var.lambda_architecture]
+  handler       = "bootstrap"
+
+  filename         = "${path.module}/../build/ideal-weight.zip"
+  source_code_hash = filebase64sha256("${path.module}/../build/ideal-weight.zip")
+
+  timeout     = 10
+  memory_size = 256
+}
+
 # ── API Gateway (REST, Lambda proxy) ───────────────────────────────────────
 resource "aws_api_gateway_rest_api" "api" {
   name = "libratrack-api"
@@ -122,6 +137,36 @@ resource "aws_lambda_permission" "apigw_webhook" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
+resource "aws_api_gateway_resource" "ideal_weight" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "ideal-weight"
+}
+
+resource "aws_api_gateway_method" "ideal_weight_post" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.ideal_weight.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "ideal_weight" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.ideal_weight.id
+  http_method             = aws_api_gateway_method.ideal_weight_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.ideal_weight.invoke_arn
+}
+
+resource "aws_lambda_permission" "apigw_ideal_weight" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ideal_weight.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+}
+
 resource "aws_api_gateway_deployment" "api" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
@@ -130,6 +175,9 @@ resource "aws_api_gateway_deployment" "api" {
       aws_api_gateway_resource.webhook.id,
       aws_api_gateway_method.webhook_post.id,
       aws_api_gateway_integration.webhook.id,
+      aws_api_gateway_resource.ideal_weight.id,
+      aws_api_gateway_method.ideal_weight_post.id,
+      aws_api_gateway_integration.ideal_weight.id,
     ]))
   }
 

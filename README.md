@@ -289,6 +289,8 @@ HTTP `POST /ideal-weight` з `{age, height_cm, sex}` → здоровий діа
 Запуск: `make test` (тести), `make build` (→ `build/ideal-weight.zip`), `make sam-invoke-iw`
 (`sam local invoke` з фікстурами `events/ideal-weight/`).
 Перевірка: `valid.json` → 200, `invalid-json.json` і `missing-field.json` → 400 з `{"error": …}`.
+На Floci функція розгортається разом з іншими (`make deploy-cli` або `make deploy-tf`), перевіряється
+в `make smoke` (секція 4), бенчмарк: `scripts/bench-cold-start.sh 10 libratrack-ideal-weight`.
 Результати та init duration — у `docs/cold-start.md`.
 
 ---

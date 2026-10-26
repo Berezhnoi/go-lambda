@@ -27,9 +27,9 @@ invoke_status() { # <функція> <файл події> -> statusCode із в
   grep -o '"statusCode":[0-9]*' "$out" | head -1 | cut -d: -f2
   rm -f "$out"
 }
-http_status() { # <файл тіла> -> HTTP-код від API Gateway
+http_status() { # <файл тіла> [url] -> HTTP-код від API Gateway
   curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
-    --data-binary "@$1" "$URL"
+    --data-binary "@$1" "${2:-$URL}"
 }
 
 echo; echo "── 1. Пряме викликання Lambda (aws lambda invoke) ──"
@@ -72,6 +72,18 @@ if awsf s3 cp "s3://${THUMBS_BUCKET}/thumbs/covers/cover.png" /tmp/thumb.png >/d
   command -v file >/dev/null && echo "    $(file /tmp/thumb.png | cut -d: -f2)"
   ok "мініатюру можна завантажити ($(wc -c < /tmp/thumb.png | tr -d ' ') байт)"
 fi
+
+echo; echo "── 4. ideal-weight ──"
+IW_URL="${AWS_ENDPOINT_URL}/restapis/${API_ID}/${STAGE}/_user_request_/ideal-weight"
+check "valid.json → 200"         200 "$(invoke_status "$IW_FN" events/ideal-weight/valid.json)"
+check "invalid-json.json → 400"  400 "$(invoke_status "$IW_FN" events/ideal-weight/invalid-json.json)"
+check "missing-field.json → 400" 400 "$(invoke_status "$IW_FN" events/ideal-weight/missing-field.json)"
+check "API: валідний → 200"      200 "$(http_status <(echo '{"age":30,"height_cm":180,"sex":"male"}') "$IW_URL")"
+check "API: зламаний JSON → 400" 400 "$(http_status <(echo '{"age":30,') "$IW_URL")"
+check "API: age 17 → 400"        400 "$(http_status <(echo '{"age":17,"height_cm":180,"sex":"male"}') "$IW_URL")"
+echo "  Відповідь на валідний запит:"
+curl -s -X POST -H 'Content-Type: application/json' -d '{"age":30,"height_cm":180,"sex":"male"}' "$IW_URL" \
+  | sed 's/^/    /'; echo
 
 echo; echo "── Підсумок: ✅ ${PASS}  ❌ ${FAIL} ──"
 [[ $FAIL -eq 0 ]]

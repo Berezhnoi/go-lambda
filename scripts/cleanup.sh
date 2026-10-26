@@ -11,7 +11,7 @@ done
 rm -f .api-id
 
 echo "▶ Lambda"
-for fn in "$WEBHOOK_FN" "$THUMB_FN"; do
+for fn in "$WEBHOOK_FN" "$THUMB_FN" "$IW_FN"; do
   awsf lambda delete-function --function-name "$fn" >/dev/null 2>&1 && echo "  ✓ $fn"
 done
 

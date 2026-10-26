@@ -10,7 +10,7 @@ source scripts/env.sh
 command -v terraform >/dev/null || command -v tofu >/dev/null || { echo "✗ Потрібен Terraform ≥1.5 або OpenTofu"; exit 1; }
 TF=$(command -v terraform || command -v tofu)
 
-[[ -f build/webhook.zip ]] || { echo "✗ Спершу: make build"; exit 1; }
+[[ -f build/webhook.zip && -f build/ideal-weight.zip ]] || { echo "✗ Спершу: make build"; exit 1; }
 cd terraform
 mode=${1:-plan}
 $TF init -input=false

@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh
 
-[[ -f build/webhook.zip && -f build/thumbnail.zip ]] || { echo "✗ Спершу: make build"; exit 1; }
+[[ -f build/webhook.zip && -f build/thumbnail.zip && -f build/ideal-weight.zip ]] || { echo "✗ Спершу: make build"; exit 1; }
 
 ACCOUNT_ID="000000000000"   # FLOCI_DEFAULT_ACCOUNT_ID за замовчуванням
 ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
@@ -64,6 +64,7 @@ echo "▶ Lambda-функції (provided.al2023, ${LAMBDA_ARCH})"
 upsert_function "$WEBHOOK_FN" build/webhook.zip   10 256
 upsert_function "$THUMB_FN"   build/thumbnail.zip 30 512 \
   "Variables={OUTPUT_BUCKET=${THUMBS_BUCKET}}"
+upsert_function "$IW_FN"      build/ideal-weight.zip 10 256
 
 echo "▶ API Gateway (REST, Lambda proxy)"
 API_ID=$(awsf apigateway get-rest-apis \
@@ -79,6 +80,21 @@ if [[ -z "$API_ID" || "$API_ID" == "None" ]]; then
   awsf apigateway put-integration --rest-api-id "$API_ID" --resource-id "$RES_ID" \
     --http-method POST --type AWS_PROXY --integration-http-method POST \
     --uri "arn:aws:apigateway:${AWS_DEFAULT_REGION}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS_DEFAULT_REGION}:${ACCOUNT_ID}:function:${WEBHOOK_FN}/invocations" \
+    >/dev/null
+fi
+# /ideal-weight — поза if, щоб маршрут додався і до API, створеного раніше.
+IW_RES=$(awsf apigateway get-resources --rest-api-id "$API_ID" \
+  --query "items[?path=='/ideal-weight'].id | [0]" --output text)
+if [[ -z "$IW_RES" || "$IW_RES" == "None" ]]; then
+  ROOT_ID=$(awsf apigateway get-resources --rest-api-id "$API_ID" \
+    --query "items[?path=='/'].id | [0]" --output text)
+  IW_RES=$(awsf apigateway create-resource --rest-api-id "$API_ID" \
+    --parent-id "$ROOT_ID" --path-part ideal-weight --query id --output text)
+  awsf apigateway put-method --rest-api-id "$API_ID" --resource-id "$IW_RES" \
+    --http-method POST --authorization-type NONE >/dev/null
+  awsf apigateway put-integration --rest-api-id "$API_ID" --resource-id "$IW_RES" \
+    --http-method POST --type AWS_PROXY --integration-http-method POST \
+    --uri "arn:aws:apigateway:${AWS_DEFAULT_REGION}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS_DEFAULT_REGION}:${ACCOUNT_ID}:function:${IW_FN}/invocations" \
     >/dev/null
 fi
 awsf apigateway create-deployment --rest-api-id "$API_ID" --stage-name "$STAGE" >/dev/null
@@ -101,3 +117,5 @@ fi
 echo
 echo "✅ Готово. Webhook:"
 echo "   curl -X POST ${AWS_ENDPOINT_URL}/restapis/${API_ID}/${STAGE}/_user_request_/webhook -d @events/payload_valid.json"
+echo "   Ideal weight:"
+echo "   curl -X POST ${AWS_ENDPOINT_URL}/restapis/${API_ID}/${STAGE}/_user_request_/ideal-weight -d '{\"age\":30,\"height_cm\":180,\"sex\":\"male\"}'"
